@@ -1,0 +1,267 @@
+﻿
+@{
+    ViewBag.Title = "Index";
+    Layout = "~/Views/Shared/_Layout.cshtml";
+}
+
+<div class="row m-4">
+    <div class="col-sm-12">
+        <div class="card">
+            <div class="card-header">
+                EMPLEADOS
+            </div>
+            <div class="card-body">
+                <table class="display responsive nowrap" id="tbemployee" style="width:100%">
+                    <thead>
+                        <tr>
+                            <td>Nombre</td>
+                            <td>Cargo</td>
+                            <td>Oficina</td>
+                            <td>Salario</td>
+                            <th></th>
+                        </tr>
+                    </thead>
+
+                </table>
+            </div>
+        </div>
+
+    </div>
+
+</div>
+
+<!-- Modal -->
+<div class="modal fade" id="FormModal" tabindex="-1" role="dialog" aria-labelledby="exampleModalLabel" aria-hidden="true">
+    <div class="modal-dialog" role="document">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title" id="exampleModalLabel"> Empleado </h5>
+                <button type="button" class="close" data-dismiss="modal" aria-label="Close">
+                    <span aria-hidden="true">&times;</span>
+                </button>
+            </div>
+            <div class="modal-body">
+                <div class="row">
+                    <div class="col-sm-12">
+
+
+                        <input type="hidden" id="txtId" />
+                        <div class="form-group">
+                            <label for="txtNombre">Nombre:</label>
+                            <input type="text" class="form-control" id="txtNombre">
+                            <p id="errNombre" class="text-danger"></p>
+                        </div>
+                        <div class="form-group">
+                            <label for="txtCargo">Cargo:</label>
+                            <input type="text" class="form-control" id="txtCargo">
+                            <p id="errCargo" class="text-danger"></p>
+                        </div>
+                        <div class="form-group">
+                            <label for="txtOficina">Oficina:</label>
+                            <input type="text" class="form-control" id="txtOficina">
+                            <p id="errOficina" class="text-danger"></p>
+                        </div>
+                        <div class="form-group">
+                            <label for="txtSalario">Salario:</label>
+                            <input type="number" class="form-control" id="txtSalario" min="0">
+                            <p id="errSalario" class="text-danger"></p>
+                        </div>
+
+                    </div>
+                </div>
+
+
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-danger" data-dismiss="modal">Cerrar</button>
+                <button type="button" class="btn btn-primary" onclick="Guardar()">Guardar</button>
+            </div>
+        </div>
+    </div>
+</div>
+
+@section scripts{
+
+    <script>
+        var tabla_persona;
+         $(document).ready( function () {
+             tabla_persona = $('#tbemployee').DataTable({
+                "ajax": {
+                    "url": "@Url.Action("GetEmployees", "Employee")",
+                    "type": "GET",
+                    "datatype": "json"
+                },
+                "columns": [
+                    { "data": "Name" },
+                    { "data": "Position" },
+                    { "data": "Office" },
+                    { "data": "Salary" },
+                    { "data": "Id", "render": function (data) {
+                            return "<button class='btn btn-primary btn-sm' type='button' onclick='abrirModal(" + data + ")'><i class='fas fa-pen'></i></button>" +
+                                "<button class='btn btn-danger btn-sm ml-2' type='button' onclick='Eliminar(" + data + ")'><i class='fa fa-trash'></i></button>"
+                        },
+                        "orderable": false,
+                        "searchable": false,
+                        "width": "150px"
+                    }
+                ],
+                dom: 'Bfrtip',
+                buttons: [
+                    {
+                        text: 'Agregar Nuevo',
+                        attr: { class: 'btn btn-success btn-sm' },
+                        action: function (e, dt, node, config) {
+                            abrirModal(0)
+                        }
+                    }
+                 ],
+                 "language": {
+                     "url": "@Url.Content("~/Content/datatable/idioma/datatable.es-ES.json")"
+                 }
+
+            });
+        });
+
+
+        function abrirModal($id) {
+
+            $("#txtId").val($id);
+            if ($id != 0) {
+
+                jQuery.ajax({
+                    url: "@Url.Action("GetEmployeeById", "Employee")" + "?id=" + $id,
+                    type: "GET",
+                    dataType: "json",
+                    contentType: "application/json; charset=utf-8",
+                    success: function (data) {
+
+                        if (data != null) {
+
+                            $("#txtNombre").val(data.Name);
+                            $("#txtCargo").val(data.Position);
+                            $("#txtOficina").val(data.Office);
+                            $("#txtSalario").val(data.Salary);
+                        }
+
+                    }
+                });
+            } else {
+                $("#txtNombre").val("");
+                $("#txtCargo").val("");
+                $("#txtOficina").val("");
+                $("#txtSalario").val(0);
+            }
+
+            $('#FormModal').modal('show');
+
+        }
+
+        function Validar($data)
+        {
+            console.log($data);
+            let bandera = true;
+
+            $("#errNombre").text('');
+            $("#errCargo").text('');
+            $("#errOficina").text('');
+            $("#errSalario").text('');
+
+            if ($data.Name == "") { $("#errNombre").text('Campo Requerido'); bandera = false; }
+            if ($data.Position == "") { $("#errCargo").text('Campo Requerido'); bandera = false; }
+            if ($data.Office == "") { $("#errOficina").text('Campo Requerido'); bandera = false; }
+            if ($data.Salary == "") { $("#errSalario").text('Campo Requerido'); bandera = false; }
+            if (Number($data.Salary) < 0) { $("#errSalario").text('Campo debe ser mayor o igual a 0'); bandera = false; }
+
+            return bandera;
+        }
+
+        function Guardar() {
+            var $data = {
+                oPersona: {
+                    Id: parseInt($("#txtId").val()),
+                    Name: $("#txtNombre").val(),
+                    Position: $("#txtCargo").val(),
+                    Office: $("#txtOficina").val(),
+                    Salary: $("#txtSalario").val(),
+                }
+            }
+
+            if (Validar($data.oPersona))
+            {
+                if ($data.oPersona.Id != 0)
+                {
+                    jQuery.ajax({
+                        url: "@Url.Action("UpdateEmployee", "Employee")",
+                        type: "POST",
+                        data: JSON.stringify($data.oPersona),
+                        dataType: "json",
+                        contentType: "application/json; charset=utf-8",
+                        success: function (data) {
+
+                            if (data.resultado) {
+                                tabla_persona.ajax.reload();
+                                $('#FormModal').modal('hide');
+                            } else {
+                                alert("No se pudo guardar los cambios");
+                            }
+                        },
+                        error: function (error) {
+                            console.log(error)
+                        },
+                        beforeSend: function () {
+
+                        }
+                    });
+                }
+                else
+                {
+                    jQuery.ajax({
+                        url: "@Url.Action("AddEmployee", "Employee")",
+                        type: "POST",
+                        data: JSON.stringify($data.oPersona),
+                        dataType: "json",
+                        contentType: "application/json; charset=utf-8",
+                        success: function (data) {
+
+                            if (data.resultado) {
+                                tabla_persona.ajax.reload();
+                                $('#FormModal').modal('hide');
+                            } else {
+                                alert("No se pudo guardar los cambios");
+                            }
+                        },
+                        error: function (error) {
+                            console.log(error)
+                        },
+                        beforeSend: function () {
+
+                        }
+                    });
+                }
+            }
+
+        }
+
+        function Eliminar($id) {
+            if (confirm("¿Realmente desea eliminar?")) {
+
+                jQuery.ajax({
+                    url: "@Url.Action("DeleteEmployee", "Employee")" + "?id=" + $id,
+                    type: "GET",
+                    dataType: "json",
+                    contentType: "application/json; charset=utf-8",
+                    success: function (data) {
+
+                        if (data.resultado) {
+                            tabla_persona.ajax.reload();
+                        }
+                    }
+                });
+
+
+            }
+        }
+
+    </script>
+
+}
