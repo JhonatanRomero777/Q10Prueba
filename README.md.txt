@@ -1,1 +1,0 @@
-echo "# Q10Prueba"
